@@ -213,39 +213,70 @@ const modalBackdrop =
 
 const GENRE_PROFILES = {
 
-  anime: {
-    aliases: ['anime'],
-    required: ['manga']
-  },
-
-  manga: {
-    aliases: ['manga', 'japanese comics'],
-    required: ['manga']
-  },
-
   romance: {
-    aliases: ['romance', 'romantic'],
-    required: ['romance']
-  },
-
-  fantasy: {
-    aliases: ['fantasy'],
-    required: ['fantasy']
-  },
-
-  mystery: {
-    aliases: ['mystery', 'detective'],
-    required: ['mystery', 'detective', 'crime']
-  },
-
-  thriller: {
-    aliases: ['thriller'],
-    required: ['thriller']
+    aliases: [
+      'romance',
+      'romantic'
+    ],
+    subjects: [
+      'romance',
+      'romantic fiction',
+      'love stories',
+      'love story'
+    ],
+    strict: true
   },
 
   horror: {
-    aliases: ['horror'],
-    required: ['horror']
+    aliases: [
+      'horror',
+      'scary',
+      'scary books'
+    ],
+    subjects: [
+      'horror',
+      'horror fiction',
+      'horror stories',
+      'gothic fiction'
+    ],
+    strict: true
+  },
+
+  fantasy: {
+    aliases: [
+      'fantasy'
+    ],
+    subjects: [
+      'fantasy',
+      'fantasy fiction'
+    ],
+    strict: true
+  },
+
+  mystery: {
+    aliases: [
+      'mystery',
+      'detective mystery'
+    ],
+    subjects: [
+      'mystery',
+      'detective fiction',
+      'mystery fiction'
+    ],
+    strict: true
+  },
+
+  thriller: {
+    aliases: [
+      'thriller',
+      'psychological thriller'
+    ],
+    subjects: [
+      'thrillers',
+      'thriller',
+      'psychological fiction'
+    ],
+    strict: true
   },
 
   scienceFiction: {
@@ -254,11 +285,11 @@ const GENRE_PROFILES = {
       'sci fi',
       'sci-fi'
     ],
-    required: [
+    subjects: [
       'science fiction',
-      'science',
-      'fiction'
-    ]
+      'science fiction novels'
+    ],
+    strict: true
   },
 
   historical: {
@@ -266,9 +297,11 @@ const GENRE_PROFILES = {
       'historical',
       'historical fiction'
     ],
-    required: [
-      'historical'
-    ]
+    subjects: [
+      'historical fiction',
+      'history'
+    ],
+    strict: true
   },
 
   biography: {
@@ -278,11 +311,13 @@ const GENRE_PROFILES = {
       'autobiography',
       'memoir'
     ],
-    required: [
+    subjects: [
       'biography',
-      'memoir',
-      'autobiography'
-    ]
+      'biographies',
+      'autobiography',
+      'memoirs'
+    ],
+    strict: true
   },
 
   selfHelp: {
@@ -291,71 +326,87 @@ const GENRE_PROFILES = {
       'self-help',
       'personal development'
     ],
-    required: [
-      'self help',
+    subjects: [
       'self-help',
+      'self help',
       'personal development'
-    ]
+    ],
+    strict: true
   },
 
   philosophy: {
-    aliases: ['philosophy', 'philosophical'],
-    required: ['philosophy']
+    aliases: [
+      'philosophy',
+      'philosophical'
+    ],
+    subjects: [
+      'philosophy'
+    ],
+    strict: true
   },
 
   poetry: {
-    aliases: ['poetry', 'poems', 'poem'],
-    required: ['poetry']
+    aliases: [
+      'poetry',
+      'poems',
+      'poem'
+    ],
+    subjects: [
+      'poetry',
+      'poems'
+    ],
+    strict: true
   },
 
   adventure: {
-    aliases: ['adventure'],
-    required: ['adventure']
+    aliases: [
+      'adventure',
+      'adventure fiction'
+    ],
+    subjects: [
+      'adventure stories',
+      'adventure fiction',
+      'adventure'
+    ],
+    strict: true
   },
 
   crime: {
-    aliases: ['crime', 'criminal'],
-    required: ['crime', 'criminal']
-  },
-
-  business: {
     aliases: [
-      'business',
-      'entrepreneurship',
-      'management'
+      'crime',
+      'crime fiction'
     ],
-    required: [
-      'business',
-      'entrepreneurship',
-      'management'
-    ]
+    subjects: [
+      'crime',
+      'crime fiction',
+      'criminal investigation'
+    ],
+    strict: true
   },
 
   psychology: {
-    aliases: ['psychology', 'psychological'],
-    required: ['psychology']
+    aliases: [
+      'psychology',
+      'psychological'
+    ],
+    subjects: [
+      'psychology',
+      'psychology books'
+    ],
+    strict: true
   },
 
-  youngAdult: {
+  manga: {
     aliases: [
-      'young adult',
-      'ya'
+      'anime',
+      'manga',
+      'japanese comics'
     ],
-    required: [
-      'young adult'
-    ]
-  },
-
-  children: {
-    aliases: [
-      'children',
-      "children's",
-      'childrens'
+    subjects: [
+      'manga',
+      'japanese comics'
     ],
-    required: [
-      'children',
-      "children's"
-    ]
+    strict: true
   }
 
 }
@@ -493,45 +544,43 @@ function matchesGenre(book, genres) {
     return true
   }
 
+  const subjects = getSubjects(book)
+    .map(subject => normalizeText(subject))
 
-  const subjects = normalizeText(
-    getSubjects(book).join(' ')
-  )
-
-
-  const title = normalizeText(
-    book.title || ''
-  )
-
+  /*
+    Known genres are checked against the book's
+    subject metadata, not just the title.
+  */
 
   for (const genre of genres) {
 
-    const required =
-      GENRE_PROFILES[genre].required
+    const profile = GENRE_PROFILES[genre]
 
-
-    const genreMatches =
-      required.some(word => {
-
-        return (
-          subjects.includes(
-            normalizeText(word)
-          )
-          ||
-          title.includes(
-            normalizeText(word)
-          )
-        )
-
-      })
-
-
-    if (!genreMatches) {
-      return false
+    if (!profile) {
+      continue
     }
 
-  }
+    if (profile.strict) {
 
+      const hasMatchingSubject =
+        profile.subjects.some(subject => {
+
+          const normalizedSubject =
+            normalizeText(subject)
+
+          return subjects.some(bookSubject =>
+            bookSubject === normalizedSubject ||
+            bookSubject.includes(normalizedSubject) ||
+            normalizedSubject.includes(bookSubject)
+          )
+
+        })
+
+      if (!hasMatchingSubject) {
+        return false
+      }
+    }
+  }
 
   return true
 }
@@ -598,27 +647,31 @@ function scoreBook(book, query, genres) {
 
 
   // Strong genre matching
-  for (const genre of genres) {
+ for (const genre of genres) {
 
-    const profile =
-      GENRE_PROFILES[genre]
+  const profile =
+    GENRE_PROFILES[genre]
 
-    for (const word of profile.required) {
+  if (!profile) continue
 
-      if (
-        subjects.includes(
-          normalizeText(word)
-        )
-      ) {
+  for (const subject of profile.subjects) {
 
-        score += 45
+    const normalizedSubject =
+      normalizeText(subject)
 
-      }
+    if (
+      subjects.includes(
+        normalizedSubject
+      )
+    ) {
+
+      score += 55
 
     }
 
   }
 
+}
 
   // Rating
   const rating =
@@ -695,52 +748,68 @@ const SEARCH_FIELDS = [
 
 async function searchBooks(query) {
 
-  const genres =
-    detectGenres(query)
-
+  const genres = detectGenres(query)
 
   let searchQueries = []
 
+  /*
+    STRICT GENRE SEARCH
+  */
 
-  // Genre request
   if (genres.length > 0) {
 
     for (const genre of genres) {
 
-      const profile =
-        GENRE_PROFILES[genre]
+      const profile = GENRE_PROFILES[genre]
 
-      for (const alias of profile.aliases) {
+      if (!profile) continue
 
-        searchQueries.push(
-          `subject:"${alias}"`
-        )
+      const subjectQuery =
+        profile.subjects
+          .map(subject =>
+            `subject:"${subject}"`
+          )
+          .join(' OR ')
 
-      }
-
+      searchQueries.push(
+        `(${subjectQuery})`
+      )
     }
 
-    // Also perform normal search
-    searchQueries.push(query)
+    /*
+      Also search the user's original text
+      so phrases like "dark fantasy romance"
+      still work.
+    */
+
+    if (genres.length > 1) {
+      searchQueries.push(query)
+    }
 
   } else {
 
-    // Specific title/author/general search
-    searchQueries.push(query)
+    /*
+      No recognized genre:
+      treat it as title/author/topic search.
+    */
+
+    searchQueries.push(
+      query
+    )
 
   }
 
 
   const requests =
     [...new Set(searchQueries)]
-      .slice(0, 7)
+      .slice(0, 6)
       .map(searchQuery => {
 
         const url =
           `https://openlibrary.org/search.json` +
           `?q=${encodeURIComponent(searchQuery)}` +
           `&fields=${encodeURIComponent(SEARCH_FIELDS)}` +
-          `&limit=30`
+          `&limit=50`
 
         return fetch(url)
       })
@@ -755,13 +824,13 @@ async function searchBooks(query) {
 
   for (const response of responses) {
 
-    if (response.ok) {
-
-      datasets.push(
-        await response.json()
-      )
-
+    if (!response.ok) {
+      continue
     }
+
+    datasets.push(
+      await response.json()
+    )
 
   }
 
@@ -774,10 +843,17 @@ async function searchBooks(query) {
 
     for (const book of data.docs || []) {
 
-      if (!book.key) continue
+      if (!book.key) {
+        continue
+      }
 
       if (!unique.has(book.key)) {
-        unique.set(book.key, book)
+
+        unique.set(
+          book.key,
+          book
+        )
+
       }
 
     }
@@ -785,30 +861,62 @@ async function searchBooks(query) {
   }
 
 
-  const ranked =
+  /*
+    Apply strict genre filtering.
+  */
+
+  let books =
     [...unique.values()]
+
+
+  if (genres.length > 0) {
+
+    books =
+      books.filter(book =>
+        matchesGenre(
+          book,
+          genres
+        )
+      )
+
+  }
+
+
+  /*
+    Score remaining books.
+  */
+
+  const ranked =
+    books
       .map(book => {
 
         return {
+
           ...book,
+
           score:
             scoreBook(
               book,
               query,
               genres
             )
+
         }
 
       })
-      .filter(book => book.score > -10000)
       .sort(
-        (a, b) => b.score - a.score
+        (a, b) =>
+          b.score - a.score
       )
 
 
   return {
-    books: ranked.slice(0, 12),
+
+    books:
+      ranked.slice(0, 12),
+
     genres
+
   }
 
 }
